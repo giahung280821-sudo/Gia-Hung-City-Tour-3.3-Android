@@ -5,8 +5,8 @@ android {
  defaultConfig {
   applicationId 'vn.giahung.citytour'
   minSdk 26
-  targetSdk 28
-  versionCode 33
+  targetSdk 35
+  versionCode 34
   versionName '3.3'
   def url = System.getenv('SITE_URL') ?: 'https://example.netlify.app/'
   resValue 'string', 'site_url', url

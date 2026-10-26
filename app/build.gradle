@@ -8,7 +8,7 @@ android {
   targetSdk 35
   versionCode 34
   versionName '3.3'
-  def url = System.getenv('SITE_URL') ?: 'https://example.netlify.app/'
+  def url = System.getenv('SITE_URL') ?: 'https://courageous-marzipan-6e0148.netlify.app/'
   resValue 'string', 'site_url', url
  }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }

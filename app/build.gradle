@@ -6,8 +6,8 @@ android {
   applicationId 'vn.giahung.citytour'
   minSdk 26
   targetSdk 35
-  versionCode 34
-  versionName '3.3'
+  versionCode 35
+  versionName '3.4'
   def url = System.getenv('SITE_URL') ?: 'https://courageous-marzipan-6e0148.netlify.app/'
   resValue 'string', 'site_url', url
  }

@@ -10,6 +10,17 @@ import android.webkit.*;
 import android.widget.Toast;
 import android.webkit.ValueCallback;
 import android.view.View;
+import android.webkit.JavascriptInterface;
+import android.provider.MediaStore;
+import android.content.ContentValues;
+import android.os.Build;
+import android.os.Environment;
+import android.content.ContentResolver;
+import android.util.Base64;
+import java.io.OutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import androidx.core.content.FileProvider;
 
 public class MainActivity extends Activity {
  private WebView web;
@@ -79,7 +90,44 @@ public class MainActivity extends Activity {
     }
    }
   });
+  web.addJavascriptInterface(new QuoteBridge(), "GiaHungAndroid");
   web.loadUrl(site);
+ }
+ private class QuoteBridge {
+  @JavascriptInterface public void saveOrShare(String data, boolean share) {
+   // Accept PNG data only, cap decoded size to 12 MB.
+   try {
+    if(data==null || data.length()>17000000 || !data.startsWith("data:image/png;base64,"))throw new IllegalArgumentException("Ảnh PNG không hợp lệ");
+    byte[] bytes=Base64.decode(data.substring("data:image/png;base64,".length()),Base64.DEFAULT);
+    if(bytes.length<8 || bytes.length>12000000 || bytes[0]!=(byte)137 || bytes[1]!=80 || bytes[2]!=78 || bytes[3]!=71)throw new IllegalArgumentException("Dữ liệu ảnh lỗi");
+    String filename="Bao-gia-Gia-Hung-"+System.currentTimeMillis()+".png";
+    if(share){
+     File dir=new File(getCacheDir(),"shared_images"); if(!dir.exists()&&!dir.mkdirs())throw new Exception("Không tạo được thư mục tạm");
+     File file=new File(dir,filename);
+     try(FileOutputStream out=new FileOutputStream(file)){out.write(bytes);}
+     Uri uri=FileProvider.getUriForFile(MainActivity.this,getPackageName()+".fileprovider",file);
+     Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("image/png");intent.putExtra(Intent.EXTRA_STREAM,uri);
+     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+     runOnUiThread(()->{try{startActivity(Intent.createChooser(intent,"Gửi ảnh báo giá"));}catch(Exception e){Toast.makeText(MainActivity.this,"Không mở được ứng dụng chia sẻ",Toast.LENGTH_LONG).show();}});
+    }else{
+     if(Build.VERSION.SDK_INT>=29){
+      ContentValues values=new ContentValues();values.put(MediaStore.Images.Media.DISPLAY_NAME,filename);
+      values.put(MediaStore.Images.Media.MIME_TYPE,"image/png");values.put(MediaStore.Images.Media.RELATIVE_PATH,Environment.DIRECTORY_PICTURES+"/GiaHungCityTour");
+      values.put(MediaStore.Images.Media.IS_PENDING,1);
+      ContentResolver resolver=getContentResolver();Uri uri=resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,values);
+      if(uri==null)throw new Exception("Không tạo được tệp ảnh");
+      try{try(OutputStream out=resolver.openOutputStream(uri)){if(out==null)throw new Exception("Không ghi được ảnh");out.write(bytes);}values.clear();values.put(MediaStore.Images.Media.IS_PENDING,0);resolver.update(uri,values,null,null);}
+      catch(Exception e){resolver.delete(uri,null,null);throw e;}
+     }else{
+      // Android 8-9: use app-owned external pictures directory; no broad storage permission.
+      File dir=getExternalFilesDir(Environment.DIRECTORY_PICTURES);if(dir==null)throw new Exception("Không có bộ nhớ");
+      File file=new File(dir,filename);try(FileOutputStream out=new FileOutputStream(file)){out.write(bytes);}
+      sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE,Uri.fromFile(file)));
+     }
+     runOnUiThread(()->Toast.makeText(MainActivity.this,"Đã lưu ảnh vào Pictures/GiaHungCityTour",Toast.LENGTH_LONG).show());
+    }
+   }catch(Exception e){runOnUiThread(()->Toast.makeText(MainActivity.this,"Lỗi ảnh: "+e.getMessage(),Toast.LENGTH_LONG).show());}
+  }
  }
  @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results) {
   super.onRequestPermissionsResult(requestCode,permissions,results);

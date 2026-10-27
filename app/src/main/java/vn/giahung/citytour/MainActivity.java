@@ -17,6 +17,7 @@ import android.os.Environment;
 import android.content.ContentResolver;
 import android.util.Base64;
 import android.util.Log;
+import android.view.WindowManager;
 import java.io.OutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,6 +36,7 @@ public class MainActivity extends Activity {
 
  @Override public void onCreate(Bundle state) {
   super.onCreate(state);
+  getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
   site = getString(R.string.site_url).trim();
   Uri siteUri = Uri.parse(site);
   if (!"https".equalsIgnoreCase(siteUri.getScheme()) || siteUri.getHost() == null) {
@@ -77,7 +79,7 @@ public class MainActivity extends Activity {
      callback.invoke(origin, false, false);
      return;
     }
-    if (hasLocationPermission()) {
+    if (hasFineLocationPermission()) {
      Log.i(TAG, "GPS permission granted for " + origin);
      callback.invoke(origin, true, false);
     } else {
@@ -121,6 +123,9 @@ public class MainActivity extends Activity {
   web.loadUrl(site);
  }
 
+ private boolean hasFineLocationPermission() {
+  return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+ }
  private boolean hasLocationPermission() {
   return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
          checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
@@ -187,6 +192,7 @@ public class MainActivity extends Activity {
   super.onRequestPermissionsResult(requestCode, permissions, results);
   if (requestCode == LOCATION_REQUEST && geoCallback != null) {
    boolean granted = hasLocationPermission();
+    if (granted && !hasFineLocationPermission()) Toast.makeText(this, "Đang dùng vị trí gần đúng. Hãy bật Vị trí chính xác trong Cài đặt ứng dụng.", Toast.LENGTH_LONG).show();
    Log.i(TAG, "Location runtime permission result: " + granted);
    geoCallback.invoke(geoOrigin, granted, false);
    if (!granted) Toast.makeText(this, "Hãy cấp quyền Vị trí chính xác cho Gia Hưng City Tour trong Cài đặt", Toast.LENGTH_LONG).show();
@@ -209,6 +215,15 @@ public class MainActivity extends Activity {
    uploadCallback.onReceiveValue(result);
    uploadCallback = null;
   }
+ }
+ @Override protected void onResume() {
+  super.onResume();
+  getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+  if (web != null) web.onResume();
+ }
+ @Override protected void onPause() {
+  if (web != null) web.onPause();
+  super.onPause();
  }
  @Override public void onBackPressed() { if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed(); }
  @Override protected void onDestroy() {

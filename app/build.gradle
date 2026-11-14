@@ -6,9 +6,9 @@ android {
   applicationId 'vn.giahung.citytour'
   minSdk 26
   targetSdk 35
-  versionCode 35
-  versionName '3.4'
-  def url = System.getenv('SITE_URL') ?: 'https://courageous-marzipan-6e0148.netlify.app/'
+  versionCode 345
+  versionName '3.4.5'
+  def url = 'https://cerulean-gecko-885c04.netlify.app/'
   resValue 'string', 'site_url', url
  }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
